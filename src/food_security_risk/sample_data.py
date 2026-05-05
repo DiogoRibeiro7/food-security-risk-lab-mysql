@@ -1,0 +1,175 @@
+"""Synthetic food-security data generation.
+
+The generated data has the same columns expected by the MySQL staging tables.
+It is not meant to be realistic enough for research. It exists to make the
+workflow reproducible without downloading external datasets.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+
+@dataclass(frozen=True)
+class SampleCountry:
+    """Country metadata used by the sample generator."""
+
+    code: str
+    name: str
+    rainfall_baseline_mm: float
+    production_baseline_tonnes: float
+    affordability_baseline_ratio: float
+
+
+COUNTRIES: tuple[SampleCountry, ...] = (
+    SampleCountry("KEN", "Kenya", 650.0, 4_200_000.0, 0.54),
+    SampleCountry("ETH", "Ethiopia", 780.0, 7_500_000.0, 0.61),
+    SampleCountry("NGA", "Nigeria", 1_050.0, 12_000_000.0, 0.48),
+    SampleCountry("SOM", "Somalia", 300.0, 900_000.0, 0.73),
+    SampleCountry("MOZ", "Mozambique", 920.0, 2_800_000.0, 0.57),
+    SampleCountry("BGD", "Bangladesh", 2_100.0, 36_000_000.0, 0.43),
+)
+
+
+def _validate_year_range(start_year: int, end_year: int) -> None:
+    """Validate the year range passed by the user."""
+
+    if start_year > end_year:
+        raise ValueError("start_year must be less than or equal to end_year.")
+    if start_year < 1980:
+        raise ValueError("start_year is unexpectedly old for this sample generator.")
+
+
+def generate_sample_tables(
+    start_year: int = 2010,
+    end_year: int = 2024,
+    seed: int = 42,
+) -> dict[str, pd.DataFrame]:
+    """Generate synthetic country-year tables.
+
+    Parameters
+    ----------
+    start_year:
+        First year to generate.
+    end_year:
+        Last year to generate.
+    seed:
+        Random seed for reproducibility.
+
+    Returns
+    -------
+    dict[str, pandas.DataFrame]
+        DataFrames keyed by logical table name.
+    """
+
+    _validate_year_range(start_year=start_year, end_year=end_year)
+    rng = np.random.default_rng(seed)
+    years = list(range(start_year, end_year + 1))
+
+    rainfall_rows: list[dict[str, object]] = []
+    crop_rows: list[dict[str, object]] = []
+    affordability_rows: list[dict[str, object]] = []
+
+    for country in COUNTRIES:
+        trend = rng.normal(loc=-0.006, scale=0.005)
+        affordability_trend = rng.normal(loc=0.015, scale=0.006)
+
+        for idx, year in enumerate(years):
+            drought_shock = -0.28 if (country.code in {"KEN", "SOM", "ETH"} and year in {2016, 2017, 2022}) else 0.0
+            rainfall_noise = rng.normal(loc=0.0, scale=0.11)
+            rainfall_factor = max(0.35, 1.0 + trend * idx + rainfall_noise + drought_shock)
+            rainfall_mm = country.rainfall_baseline_mm * rainfall_factor
+            rainfall_anomaly_pct = ((rainfall_mm / country.rainfall_baseline_mm) - 1.0) * 100.0
+
+            crop_noise = rng.normal(loc=0.0, scale=0.08)
+            crop_factor = max(0.25, 1.0 + 0.45 * (rainfall_factor - 1.0) + crop_noise)
+            production_tonnes = country.production_baseline_tonnes * crop_factor
+            production_anomaly_pct = ((production_tonnes / country.production_baseline_tonnes) - 1.0) * 100.0
+
+            affordability_noise = rng.normal(loc=0.0, scale=0.04)
+            affordability_factor = max(0.2, 1.0 + affordability_trend * idx - 0.25 * (crop_factor - 1.0) + affordability_noise)
+            affordability_ratio = country.affordability_baseline_ratio * affordability_factor
+            affordability_anomaly_pct = ((affordability_ratio / country.affordability_baseline_ratio) - 1.0) * 100.0
+
+            rainfall_rows.append(
+                {
+                    "country_code": country.code,
+                    "country_name": country.name,
+                    "year": year,
+                    "rainfall_mm": round(rainfall_mm, 2),
+                    "rainfall_baseline_mm": country.rainfall_baseline_mm,
+                    "rainfall_anomaly_pct": round(rainfall_anomaly_pct, 3),
+                    "source_dataset": "synthetic",
+                }
+            )
+            crop_rows.append(
+                {
+                    "country_code": country.code,
+                    "country_name": country.name,
+                    "year": year,
+                    "crop_group": "cereals",
+                    "production_tonnes": round(production_tonnes, 2),
+                    "production_baseline_tonnes": country.production_baseline_tonnes,
+                    "production_anomaly_pct": round(production_anomaly_pct, 3),
+                    "source_dataset": "synthetic",
+                }
+            )
+            affordability_rows.append(
+                {
+                    "country_code": country.code,
+                    "country_name": country.name,
+                    "year": year,
+                    "healthy_diet_cost_ppp": round(3.0 * affordability_factor, 3),
+                    "affordability_ratio": round(affordability_ratio, 4),
+                    "affordability_baseline_ratio": country.affordability_baseline_ratio,
+                    "affordability_anomaly_pct": round(affordability_anomaly_pct, 3),
+                    "source_dataset": "synthetic",
+                }
+            )
+
+    return {
+        "rainfall_country_year": pd.DataFrame(rainfall_rows),
+        "crop_production_country_year": pd.DataFrame(crop_rows),
+        "food_affordability_country_year": pd.DataFrame(affordability_rows),
+    }
+
+
+def write_sample_tables(
+    output_dir: Path,
+    start_year: int = 2010,
+    end_year: int = 2024,
+    seed: int = 42,
+) -> dict[str, Path]:
+    """Generate and write sample CSV files.
+
+    Parameters
+    ----------
+    output_dir:
+        Directory where CSV files will be written.
+    start_year:
+        First sample year.
+    end_year:
+        Last sample year.
+    seed:
+        Random seed.
+
+    Returns
+    -------
+    dict[str, pathlib.Path]
+        Written file paths keyed by logical table name.
+    """
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    tables = generate_sample_tables(start_year=start_year, end_year=end_year, seed=seed)
+    paths: dict[str, Path] = {}
+
+    for name, frame in tables.items():
+        path = output_dir / f"{name}.csv"
+        frame.to_csv(path, index=False)
+        paths[name] = path
+
+    return paths

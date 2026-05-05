@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: Food Security Risk Lab — MySQL Edition
+message: If you use this repository, please cite it.
+type: software
+authors:
+  - family-names: Ribeiro
+    given-names: Diogo
+repository-code: https://github.com/DiogoRibeiro7/food-security-risk-lab
+abstract: Local MySQL platform for transparent food-security early-warning analytics.
+license: MIT
+version: 0.1.0
