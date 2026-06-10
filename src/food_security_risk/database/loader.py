@@ -76,6 +76,20 @@ def write_country_month_mart(engine: Engine, mart: pd.DataFrame, replace: bool =
     return len(mart)
 
 
+def load_fewsnet_context(engine: Engine, frame: pd.DataFrame, replace: bool = True) -> int:
+    """Load FEWS NET / IPC context into ``fewsnet_context``."""
+
+    if_exists: Literal["replace", "append"] = "replace" if replace else "append"
+    frame.to_sql("fewsnet_context", engine, if_exists=if_exists, index=False)
+    return len(frame)
+
+
+def read_fewsnet_context(engine: Engine) -> pd.DataFrame:
+    """Read the FEWS NET / IPC context table from MySQL."""
+
+    return pd.read_sql("SELECT * FROM fewsnet_context", engine)
+
+
 def load_country_dimension(engine: Engine, frame: pd.DataFrame, replace: bool = True) -> int:
     """Load the canonical country dimension into ``dim_country``."""
 

@@ -233,3 +233,70 @@ def generate_monthly_rainfall(
                 )
 
     return pd.DataFrame(rows)
+
+
+# Countries and months at elevated IPC phase, aligned with the synthetic monthly
+# drought episode so the context join has something meaningful to compare against.
+_DROUGHT_CONTEXT_COUNTRIES = {"KEN", "SOM", "ETH"}
+
+
+def generate_fewsnet_context(
+    start_year: int = 2021,
+    end_year: int = 2023,
+) -> pd.DataFrame:
+    """Generate synthetic FEWS NET-style IPC context for the in-scope countries.
+
+    This is illustrative context, not a label: drought-affected countries are
+    placed at higher IPC phases around the 2022 episode, with a current and a
+    projected classification per period. It exists so the context join can be
+    demonstrated offline.
+    """
+
+    _validate_year_range(start_year=start_year, end_year=end_year)
+    rows: list[dict[str, object]] = []
+
+    for country in COUNTRIES:
+        drought_country = country.code in _DROUGHT_CONTEXT_COUNTRIES
+        for year in range(start_year, end_year + 1):
+            for month in (1, 4, 7, 10):  # quarterly assessments
+                if drought_country and year == 2022 and month in (4, 7):
+                    current_phase = 4 if month == 7 else 3
+                    narrative = "Below-average rains driving acute food insecurity."
+                elif drought_country and year == 2022:
+                    current_phase = 3
+                    narrative = "Deteriorating conditions amid rainfall deficits."
+                else:
+                    current_phase = 2 if drought_country else 1
+                    narrative = "Conditions broadly in line with seasonal norms."
+
+                rows.append(
+                    {
+                        "country_code": country.code,
+                        "country_name": country.name,
+                        "area_name": pd.NA,
+                        "year": year,
+                        "month": month,
+                        "ipc_phase": current_phase,
+                        "classification_type": "current",
+                        "narrative": narrative,
+                        "as_of_date": f"{year}-{month:02d}-01",
+                    }
+                )
+                # A projection one notch worse for drought countries during 2022.
+                bump = 1 if (drought_country and year == 2022) else 0
+                projected_phase = min(5, current_phase + bump)
+                rows.append(
+                    {
+                        "country_code": country.code,
+                        "country_name": country.name,
+                        "area_name": pd.NA,
+                        "year": year,
+                        "month": month,
+                        "ipc_phase": projected_phase,
+                        "classification_type": "projected",
+                        "narrative": pd.NA,
+                        "as_of_date": f"{year}-{month:02d}-01",
+                    }
+                )
+
+    return pd.DataFrame(rows)

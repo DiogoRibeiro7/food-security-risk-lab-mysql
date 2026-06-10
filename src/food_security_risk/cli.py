@@ -9,12 +9,18 @@ import pandas as pd
 import typer
 from rich.console import Console
 
+from food_security_risk.context.fewsnet import (
+    join_context_to_risk,
+    normalize_fewsnet_context,
+)
 from food_security_risk.database.engine import create_mysql_engine
 from food_security_risk.database.loader import (
     load_country_dimension,
+    load_fewsnet_context,
     load_rainfall_country_month,
     load_raw_csvs,
     load_source_mapping,
+    read_fewsnet_context,
     read_mart,
     read_rainfall_country_month,
     write_country_month_mart,
@@ -35,7 +41,11 @@ from food_security_risk.ingestion.normalize import (
 from food_security_risk.ingestion.world_bank import download_world_bank_indicator
 from food_security_risk.reporting.markdown import write_markdown_report
 from food_security_risk.risk.scoring import score_food_security_risk
-from food_security_risk.sample_data import generate_monthly_rainfall, write_sample_tables
+from food_security_risk.sample_data import (
+    generate_fewsnet_context,
+    generate_monthly_rainfall,
+    write_sample_tables,
+)
 
 app = typer.Typer(help="Food-security early-warning analytics with local MySQL.")
 console = Console()
@@ -74,6 +84,7 @@ def init_mysql() -> None:
         "04_score_tables.sql",
         "05_country_dim.sql",
         "06_monthly_tables.sql",
+        "07_context_tables.sql",
     ]:
         execute_sql_file(engine, SQL_DIR / sql_file)
         console.print(f"[green]executed[/green] {sql_file}")
@@ -479,6 +490,101 @@ def build_monthly_mart(
         engine = create_mysql_engine()
         rows = write_country_month_mart(engine, mart)
         console.print(f"[green]wrote[/green] {rows} rows to mart_country_month_food_security")
+
+
+@app.command("sample-context")
+def sample_context(
+    output: Path = typer.Option(
+        Path("data/raw/fewsnet_context.csv"),
+        help="Where to write synthetic FEWS NET/IPC context.",
+    ),
+    start_year: int = typer.Option(2021, help="First sample year."),
+    end_year: int = typer.Option(2023, help="Last sample year."),
+) -> None:
+    """Generate synthetic FEWS NET/IPC context aligned with the sample drought."""
+
+    frame = generate_fewsnet_context(start_year=start_year, end_year=end_year)
+    frame = normalize_fewsnet_context(frame, source_dataset="synthetic")
+    write_normalized_csv(frame, output)
+    console.print(f"[green]wrote[/green] {len(frame)} context rows: {output}")
+
+
+@app.command("ingest-context")
+def ingest_context(
+    input_csv: Path = typer.Option(..., help="FEWS NET/IPC-style context CSV."),
+    output: Path = typer.Option(
+        Path("data/raw/fewsnet_context.csv"),
+        help="Normalized context output.",
+    ),
+    raw_dir: Path = typer.Option(Path("data/raw"), help="Directory for the manifest."),
+    version: str = typer.Option("context", help="Source version recorded in the manifest."),
+) -> None:
+    """Normalize a FEWS NET/IPC-style context table into the staging schema."""
+
+    raw = pd.read_csv(input_csv)
+    frame = normalize_fewsnet_context(raw)
+    write_normalized_csv(frame, output)
+    console.print(f"[green]wrote[/green] {len(frame)} context rows: {output}")
+
+    entry = build_entry(
+        dataset="fewsnet_context",
+        source="FEWS NET / IPC context",
+        version=version,
+        downloaded_at=datetime.now(timezone.utc).isoformat(),
+        file_path=output,
+        manifest_dir=raw_dir,
+    )
+    update_manifest(raw_dir / "manifest.json", entry)
+    console.print("[green]recorded[/green] manifest entry: fewsnet_context")
+
+
+@app.command("load-context")
+def load_context(
+    input_csv: Path = typer.Option(
+        Path("data/raw/fewsnet_context.csv"),
+        help="Normalized context CSV.",
+    ),
+    append: bool = typer.Option(False, help="Append instead of replacing the table."),
+) -> None:
+    """Load FEWS NET/IPC context into the MySQL fewsnet_context table."""
+
+    engine = create_mysql_engine()
+    frame = pd.read_csv(input_csv)
+    rows = load_fewsnet_context(engine, frame, replace=not append)
+    console.print(f"[green]loaded[/green] {rows} rows into fewsnet_context")
+
+
+@app.command("join-context")
+def join_context(
+    risk_csv: Path = typer.Option(..., help="Risk output CSV (scores or monthly mart)."),
+    output: Path = typer.Option(
+        Path("reports/sample_run/risk_with_context.csv"),
+        help="Where to write the context-annotated risk output.",
+    ),
+    level: str = typer.Option("year", help="Join grain: 'year' or 'month'."),
+    context_source: str = typer.Option("mysql", help="Read context from 'mysql' or 'csv'."),
+    context_csv: Path = typer.Option(
+        Path("data/raw/fewsnet_context.csv"),
+        help="Context CSV when --context-source=csv.",
+    ),
+) -> None:
+    """Attach FEWS NET/IPC context to a risk output as reference (never a label)."""
+
+    risk = pd.read_csv(risk_csv)
+    if context_source == "mysql":
+        engine = create_mysql_engine()
+        context = read_fewsnet_context(engine)
+    elif context_source == "csv":
+        context = pd.read_csv(context_csv)
+    else:
+        raise typer.BadParameter("context-source must be 'mysql' or 'csv'.")
+
+    annotated = join_context_to_risk(risk, context, level=level)
+    write_normalized_csv(annotated, output)
+    matched = int(annotated["context_ipc_phase"].notna().sum())
+    console.print(
+        f"[green]wrote[/green] {len(annotated)} rows ({matched} with context): {output}"
+    )
 
 
 if __name__ == "__main__":
