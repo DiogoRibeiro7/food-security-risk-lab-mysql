@@ -107,7 +107,7 @@ def normalize_fewsnet_context(
 
     result = frame.copy()
     result["country_code"] = result["country_code"].astype(str).str.upper().str.strip()
-    result["year"] = result["year"].astype(int)
+    result["year"] = result["year"].astype("int64")
     result["ipc_phase"] = pd.to_numeric(result["ipc_phase"], errors="coerce").astype("Int64")
     result["classification_type"] = (
         result["classification_type"].astype(str).str.strip().str.lower()

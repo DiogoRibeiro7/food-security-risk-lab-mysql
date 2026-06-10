@@ -326,7 +326,7 @@ def normalize_faostat_production(
 
     production["country_code"] = production[_FAOSTAT_AREA_COL].map(lambda a: country_map[a].iso3)
     production["country_name"] = production[_FAOSTAT_AREA_COL].map(lambda a: country_map[a].name)
-    production["year"] = production[_FAOSTAT_YEAR_COL].astype(int)
+    production["year"] = production[_FAOSTAT_YEAR_COL].astype("int64")
     production["production_tonnes"] = pd.to_numeric(production[_FAOSTAT_VALUE_COL], errors="coerce")
 
     grouped = production.groupby(
@@ -401,7 +401,7 @@ def normalize_rainfall_summary(
         raise ValueError(f"rainfall summary is missing columns: {', '.join(sorted(missing))}")
 
     result = frame[["country_code", "country_name", "year", "rainfall_mm"]].copy()
-    result["year"] = result["year"].astype(int)
+    result["year"] = result["year"].astype("int64")
     result["rainfall_mm"] = pd.to_numeric(result["rainfall_mm"], errors="coerce")
 
     result = compute_baseline_anomaly(
@@ -451,8 +451,8 @@ def normalize_rainfall_country_month(
 
     result = frame[["country_code", "country_name", "year", "month", "rainfall_mm"]].copy()
     result["country_code"] = result["country_code"].astype(str).str.upper().str.strip()
-    result["year"] = result["year"].astype(int)
-    result["month"] = result["month"].astype(int)
+    result["year"] = result["year"].astype("int64")
+    result["month"] = result["month"].astype("int64")
     if not result["month"].between(1, 12).all():
         raise ValueError("month values must be in 1..12.")
     result["rainfall_mm"] = pd.to_numeric(result["rainfall_mm"], errors="coerce")

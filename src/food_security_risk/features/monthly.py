@@ -64,7 +64,9 @@ def _complete_month_grid(frame: pd.DataFrame) -> pd.DataFrame:
     spans = frame.groupby("country_code")["period"].agg(["min", "max"])
     for country_code, row in spans.iterrows():
         code = str(country_code)
-        periods = np.arange(int(row["min"]), int(row["max"]) + 1)
+        # Explicit int64: np.arange defaults to int32 on Windows, and pandas
+        # cannot merge int32 keys against int64 keys.
+        periods = np.arange(int(row["min"]), int(row["max"]) + 1, dtype=np.int64)
         grids.append(
             pd.DataFrame(
                 {
@@ -119,8 +121,8 @@ def build_country_month_mart(
 
     observed = rainfall.copy()
     observed["country_code"] = observed["country_code"].astype(str).str.upper().str.strip()
-    observed["year"] = observed["year"].astype(int)
-    observed["month"] = observed["month"].astype(int)
+    observed["year"] = observed["year"].astype("int64")
+    observed["month"] = observed["month"].astype("int64")
     if not observed["month"].between(1, 12).all():
         raise ValueError("month values must be in 1..12.")
     observed["rainfall_mm"] = pd.to_numeric(observed["rainfall_mm"], errors="coerce")
@@ -205,7 +207,7 @@ def _attach_annual_indicators(
     _require_columns(annual_indicators, {"country_code", "year"}, "annual_indicators")
     annual = annual_indicators.copy()
     annual["country_code"] = annual["country_code"].astype(str).str.upper().str.strip()
-    annual["year"] = annual["year"].astype(int)
+    annual["year"] = annual["year"].astype("int64")
 
     indicator_columns = [c for c in annual.columns if c not in {"country_code", "year"}]
     merged = mart.merge(annual, on=["country_code", "year"], how="left")

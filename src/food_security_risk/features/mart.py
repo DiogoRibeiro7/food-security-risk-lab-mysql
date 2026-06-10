@@ -77,7 +77,7 @@ def build_country_year_mart(
 
     for frame in (rainfall_clean, crop_clean, affordability_clean):
         frame["country_code"] = frame["country_code"].astype(str).str.upper().str.strip()
-        frame["year"] = frame["year"].astype(int)
+        frame["year"] = frame["year"].astype("int64")
 
     joined = rainfall_clean.merge(
         crop_clean,

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import cast
 
-import numpy as np
 import pandas as pd
 
 SCORE_COLUMNS = [
@@ -16,10 +15,10 @@ SCORE_COLUMNS = [
 ]
 
 
-def clamp_score(values: pd.Series | np.ndarray | float) -> pd.Series | np.ndarray | float:
-    """Clamp one or more numeric values to the 0-100 score range."""
+def clamp_score(values: pd.Series) -> pd.Series:
+    """Clamp a series of numeric values to the 0-100 score range."""
 
-    return np.clip(values, 0.0, 100.0)
+    return values.clip(0.0, 100.0)
 
 
 def _risk_band(score: float) -> str:
