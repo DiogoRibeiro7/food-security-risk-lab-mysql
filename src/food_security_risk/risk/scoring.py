@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 import pandas as pd
 
@@ -54,7 +56,8 @@ def _build_driver_text(row: pd.Series) -> str:
             "multiple severe flags active",
         ),
     ]
-    active = [text for _, value, text in sorted(drivers, key=lambda item: item[1], reverse=True) if value >= 30]
+    ranked = sorted(drivers, key=lambda item: item[1], reverse=True)
+    active = [text for _, value, text in ranked if value >= 30]
     if not active:
         return "No strong deterioration driver under the current scoring assumptions."
     return "; ".join(active[:3])
@@ -93,7 +96,9 @@ def score_food_security_risk(mart: pd.DataFrame) -> pd.DataFrame:
     scored = mart.copy()
 
     scored["rainfall_deficit_score"] = clamp_score(-scored["rainfall_anomaly_pct"] * 2.5)
-    scored["food_affordability_pressure_score"] = clamp_score(scored["affordability_anomaly_pct"] * 2.5)
+    scored["food_affordability_pressure_score"] = clamp_score(
+        scored["affordability_anomaly_pct"] * 2.5
+    )
     scored["crop_production_decline_score"] = clamp_score(-scored["production_anomaly_pct"] * 2.5)
 
     absolute_components = pd.concat(
@@ -121,7 +126,9 @@ def score_food_security_risk(mart: pd.DataFrame) -> pd.DataFrame:
         + 0.10 * scored["recent_deterioration_score"]
     ).round(3)
 
-    scored["risk_band"] = scored["food_security_risk_score"].map(lambda value: _risk_band(float(value)))
+    scored["risk_band"] = scored["food_security_risk_score"].map(
+        lambda value: _risk_band(float(value))
+    )
     scored["main_drivers"] = scored.apply(_build_driver_text, axis=1)
 
     output_columns = [
@@ -134,6 +141,7 @@ def score_food_security_risk(mart: pd.DataFrame) -> pd.DataFrame:
         "risk_band",
         "main_drivers",
     ]
-    return scored[output_columns].sort_values(
+    ranked = scored[output_columns].sort_values(
         ["food_security_risk_score", "country_code", "year"], ascending=[False, True, False]
     )
+    return cast(pd.DataFrame, ranked)

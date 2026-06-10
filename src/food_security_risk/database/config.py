@@ -19,7 +19,7 @@ class MySQLConfig:
     password: str
 
     @classmethod
-    def from_env(cls) -> "MySQLConfig":
+    def from_env(cls) -> MySQLConfig:
         """Build configuration from environment variables and optional `.env`."""
 
         load_dotenv()

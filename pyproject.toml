@@ -40,6 +40,11 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
+[tool.ruff.lint.flake8-bugbear]
+# Typer encourages function calls (typer.Option/Argument) as parameter defaults;
+# they are evaluated once and treated as immutable, so B008 is a false positive.
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
 [tool.mypy]
 python_version = "3.10"
 strict = true

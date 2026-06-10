@@ -61,7 +61,11 @@ def generate_markdown_report(scores: pd.DataFrame, title: str = "Food Security R
             "",
             "## Responsible interpretation",
             "",
-            "A high score does not confirm food insecurity or famine. It means the selected rainfall, crop-production, and affordability indicators are deteriorating under the current scoring assumptions.",
+            (
+                "A high score does not confirm food insecurity or famine. It "
+                "means the selected rainfall, crop-production, and affordability "
+                "indicators are deteriorating under the current scoring assumptions."
+            ),
             "",
         ]
     )

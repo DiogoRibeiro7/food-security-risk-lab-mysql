@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import pandas as pd
+from typing import cast
 
+import pandas as pd
 
 REQUIRED_RAINFALL_COLUMNS = {
     "country_code",
@@ -92,6 +93,9 @@ def build_country_year_mart(
 
     joined["severe_rainfall_deficit_flag"] = (joined["rainfall_anomaly_pct"] < -20).astype(int)
     joined["severe_crop_decline_flag"] = (joined["production_anomaly_pct"] < -15).astype(int)
-    joined["severe_affordability_pressure_flag"] = (joined["affordability_anomaly_pct"] > 15).astype(int)
+    joined["severe_affordability_pressure_flag"] = (
+        joined["affordability_anomaly_pct"] > 15
+    ).astype(int)
 
-    return joined.sort_values(["country_code", "year", "crop_group"]).reset_index(drop=True)
+    ordered = joined.sort_values(["country_code", "year", "crop_group"]).reset_index(drop=True)
+    return cast(pd.DataFrame, ordered)

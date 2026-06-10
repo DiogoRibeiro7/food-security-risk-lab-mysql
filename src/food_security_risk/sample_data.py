@@ -79,7 +79,8 @@ def generate_sample_tables(
         affordability_trend = rng.normal(loc=0.015, scale=0.006)
 
         for idx, year in enumerate(years):
-            drought_shock = -0.28 if (country.code in {"KEN", "SOM", "ETH"} and year in {2016, 2017, 2022}) else 0.0
+            is_drought = country.code in {"KEN", "SOM", "ETH"} and year in {2016, 2017, 2022}
+            drought_shock = -0.28 if is_drought else 0.0
             rainfall_noise = rng.normal(loc=0.0, scale=0.11)
             rainfall_factor = max(0.35, 1.0 + trend * idx + rainfall_noise + drought_shock)
             rainfall_mm = country.rainfall_baseline_mm * rainfall_factor
@@ -88,12 +89,19 @@ def generate_sample_tables(
             crop_noise = rng.normal(loc=0.0, scale=0.08)
             crop_factor = max(0.25, 1.0 + 0.45 * (rainfall_factor - 1.0) + crop_noise)
             production_tonnes = country.production_baseline_tonnes * crop_factor
-            production_anomaly_pct = ((production_tonnes / country.production_baseline_tonnes) - 1.0) * 100.0
+            production_anomaly_pct = (
+                (production_tonnes / country.production_baseline_tonnes) - 1.0
+            ) * 100.0
 
             affordability_noise = rng.normal(loc=0.0, scale=0.04)
-            affordability_factor = max(0.2, 1.0 + affordability_trend * idx - 0.25 * (crop_factor - 1.0) + affordability_noise)
+            affordability_factor = max(
+                0.2,
+                1.0 + affordability_trend * idx - 0.25 * (crop_factor - 1.0) + affordability_noise,
+            )
             affordability_ratio = country.affordability_baseline_ratio * affordability_factor
-            affordability_anomaly_pct = ((affordability_ratio / country.affordability_baseline_ratio) - 1.0) * 100.0
+            affordability_anomaly_pct = (
+                (affordability_ratio / country.affordability_baseline_ratio) - 1.0
+            ) * 100.0
 
             rainfall_rows.append(
                 {
@@ -173,3 +181,55 @@ def write_sample_tables(
         paths[name] = path
 
     return paths
+
+
+# A simple seasonal rainfall shape (share of annual rainfall by calendar month).
+# It is a generic bimodal-ish profile, not a specific climate; it just gives the
+# monthly mart a realistic seasonal signal to compute anomalies against.
+_MONTHLY_SEASONAL_SHAPE: tuple[float, ...] = (
+    0.02, 0.03, 0.06, 0.12, 0.16, 0.13, 0.08, 0.06, 0.07, 0.11, 0.10, 0.06,
+)
+
+
+def generate_monthly_rainfall(
+    start_year: int = 2018,
+    end_year: int = 2024,
+    seed: int = 7,
+) -> pd.DataFrame:
+    """Generate synthetic monthly rainfall with seasonality and a drought episode.
+
+    The series follows a fixed seasonal shape scaled by each country's annual
+    baseline, with multiplicative noise. A multi-month drought is injected for a
+    subset of countries so the rolling-deficit and deterioration signals in the
+    country-month mart have something to detect.
+
+    Returns a frame matching ``raw_rainfall_country_month`` (minus provenance).
+    """
+
+    _validate_year_range(start_year=start_year, end_year=end_year)
+    rng = np.random.default_rng(seed)
+    rows: list[dict[str, object]] = []
+
+    for country in COUNTRIES:
+        for year in range(start_year, end_year + 1):
+            for month in range(1, 13):
+                seasonal_share = _MONTHLY_SEASONAL_SHAPE[month - 1]
+                expected_mm = country.rainfall_baseline_mm * seasonal_share
+                noise = rng.normal(loc=1.0, scale=0.15)
+                drought = (
+                    0.45
+                    if (country.code in {"KEN", "SOM", "ETH"} and year == 2022 and 3 <= month <= 8)
+                    else 1.0
+                )
+                rainfall_mm = max(0.0, expected_mm * noise * drought)
+                rows.append(
+                    {
+                        "country_code": country.code,
+                        "country_name": country.name,
+                        "year": year,
+                        "month": month,
+                        "rainfall_mm": round(rainfall_mm, 2),
+                    }
+                )
+
+    return pd.DataFrame(rows)
