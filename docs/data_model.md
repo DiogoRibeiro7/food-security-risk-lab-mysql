@@ -54,3 +54,14 @@ This table joins rainfall, crop production, and affordability indicators into on
 ### `food_security_risk_score`
 
 Stores the final risk score, component scores, risk band, and main textual drivers.
+
+## Later additions
+
+Tables added after the country-year prototype are documented in their own
+design notes:
+
+- `raw_rainfall_country_month` and `mart_country_month_food_security` — see
+  [monthly_early_warning.md](monthly_early_warning.md)
+- `dim_country` and `country_source_mapping` — see
+  [country_harmonization.md](country_harmonization.md)
+- `fewsnet_context` — see [fewsnet_context.md](fewsnet_context.md)
