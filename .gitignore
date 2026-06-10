@@ -58,3 +58,7 @@ venv.bak/
 # Windows
 Thumbs.db
 ehthumbs.db
+
+# Agent scaffolding (local only, kept out of version control)
+AGENTS.md
+prompts/next_agent_prompts.md
