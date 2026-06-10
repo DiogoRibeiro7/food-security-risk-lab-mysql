@@ -9,6 +9,12 @@ import pandas as pd
 import typer
 from rich.console import Console
 
+from food_security_risk.affordability.validation import validate_affordability_country_year
+from food_security_risk.agriculture.validation import validate_crop_production_country_year
+from food_security_risk.climate.validation import (
+    validate_rainfall_country_month,
+    validate_rainfall_country_year,
+)
 from food_security_risk.context.fewsnet import (
     join_context_to_risk,
     normalize_fewsnet_context,
@@ -80,7 +86,6 @@ def init_mysql() -> None:
     for sql_file in [
         "00_init_database.sql",
         "01_raw_tables.sql",
-        "02_indexes.sql",
         "04_score_tables.sql",
         "05_country_dim.sql",
         "06_monthly_tables.sql",
@@ -213,6 +218,7 @@ def ingest_world_bank(
     frame = normalize_world_bank_affordability(
         payload, baseline_years=_parse_baseline_years(baseline_years)
     )
+    validate_affordability_country_year(frame)
     write_normalized_csv(frame, output)
     console.print(f"[green]wrote[/green] {len(frame)} rows: {output}")
 
@@ -278,6 +284,7 @@ def ingest_faostat(
             f"[yellow]dropped {len(unmapped)} unresolved FAOSTAT areas[/yellow]: "
             f"{', '.join(unmapped)}"
         )
+    validate_crop_production_country_year(frame)
     write_normalized_csv(frame, output)
     console.print(f"[green]wrote[/green] {len(frame)} rows: {output}")
 
@@ -310,6 +317,7 @@ def ingest_rainfall(
 
     raw = pd.read_csv(input_csv)
     frame = normalize_rainfall_summary(raw, baseline_years=_parse_baseline_years(baseline_years))
+    validate_rainfall_country_year(frame)
     write_normalized_csv(frame, output)
     console.print(f"[green]wrote[/green] {len(frame)} rows: {output}")
 
@@ -425,6 +433,7 @@ def ingest_rainfall_monthly(
 
     raw = pd.read_csv(input_csv)
     frame = normalize_rainfall_country_month(raw)
+    validate_rainfall_country_month(frame)
     write_normalized_csv(frame, output)
     console.print(f"[green]wrote[/green] {len(frame)} rows: {output}")
 
