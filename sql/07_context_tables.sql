@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS fewsnet_context (
     narrative TEXT NULL,
     source VARCHAR(128) DEFAULT 'fewsnet',
     as_of_date VARCHAR(32) NULL,
-    loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    loaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Declared inline so the script stays idempotent: MySQL has no
+    -- CREATE INDEX IF NOT EXISTS.
+    INDEX idx_fewsnet_context_country_period (country_code, year, month)
 );
-
-CREATE INDEX idx_fewsnet_context_country_period
-    ON fewsnet_context (country_code, year, month);
