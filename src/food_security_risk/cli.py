@@ -269,8 +269,7 @@ def ingest_faostat(
     flagged = mapping[mapping["quality_flag"] != "exact"]
     if not flagged.empty:
         console.print(
-            f"[yellow]{len(flagged)} FAOSTAT areas need review[/yellow] "
-            f"(see {mapping_report})"
+            f"[yellow]{len(flagged)} FAOSTAT areas need review[/yellow] " f"(see {mapping_report})"
         )
 
     frame, unmapped = normalize_faostat_production(
@@ -591,9 +590,7 @@ def join_context(
     annotated = join_context_to_risk(risk, context, level=level)
     write_normalized_csv(annotated, output)
     matched = int(annotated["context_ipc_phase"].notna().sum())
-    console.print(
-        f"[green]wrote[/green] {len(annotated)} rows ({matched} with context): {output}"
-    )
+    console.print(f"[green]wrote[/green] {len(annotated)} rows ({matched} with context): {output}")
 
 
 if __name__ == "__main__":

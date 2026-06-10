@@ -206,9 +206,7 @@ def test_replace_load_preserves_table_ddl(engine: Engine, tmp_path: Path) -> Non
     primary_key = inspect(engine).get_pk_constraint("raw_rainfall_country_month")
     assert primary_key["constrained_columns"] == ["country_code", "year", "month"]
     with engine.connect() as connection:
-        count = connection.execute(
-            text("SELECT COUNT(*) FROM raw_rainfall_country_month")
-        ).scalar()
+        count = connection.execute(text("SELECT COUNT(*) FROM raw_rainfall_country_month")).scalar()
     assert count == 2
 
 
@@ -226,7 +224,5 @@ def test_append_load_accumulates_rows(engine: Engine) -> None:
     load_rainfall_country_month(engine, frame.assign(month=[2]), replace=False)
 
     with engine.connect() as connection:
-        count = connection.execute(
-            text("SELECT COUNT(*) FROM raw_rainfall_country_month")
-        ).scalar()
+        count = connection.execute(text("SELECT COUNT(*) FROM raw_rainfall_country_month")).scalar()
     assert count == 2

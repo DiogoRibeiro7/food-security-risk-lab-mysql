@@ -329,9 +329,9 @@ def normalize_faostat_production(
     production["year"] = production[_FAOSTAT_YEAR_COL].astype("int64")
     production["production_tonnes"] = pd.to_numeric(production[_FAOSTAT_VALUE_COL], errors="coerce")
 
-    grouped = production.groupby(
-        ["country_code", "country_name", "year"], as_index=False
-    )["production_tonnes"].sum()
+    grouped = production.groupby(["country_code", "country_name", "year"], as_index=False)[
+        "production_tonnes"
+    ].sum()
     grouped["crop_group"] = crop_group
 
     grouped = compute_baseline_anomaly(
@@ -343,18 +343,22 @@ def normalize_faostat_production(
         baseline_years=baseline_years,
     )
     grouped["source_dataset"] = source_dataset
-    staging = grouped[
-        [
-            "country_code",
-            "country_name",
-            "year",
-            "crop_group",
-            "production_tonnes",
-            "production_baseline_tonnes",
-            "production_anomaly_pct",
-            "source_dataset",
+    staging = (
+        grouped[
+            [
+                "country_code",
+                "country_name",
+                "year",
+                "crop_group",
+                "production_tonnes",
+                "production_baseline_tonnes",
+                "production_anomaly_pct",
+                "source_dataset",
+            ]
         ]
-    ].sort_values(["country_code", "year"]).reset_index(drop=True)
+        .sort_values(["country_code", "year"])
+        .reset_index(drop=True)
+    )
     return cast(pd.DataFrame, staging), unmapped
 
 
@@ -413,17 +417,21 @@ def normalize_rainfall_summary(
         baseline_years=baseline_years,
     )
     result["source_dataset"] = source_dataset
-    rainfall = result[
-        [
-            "country_code",
-            "country_name",
-            "year",
-            "rainfall_mm",
-            "rainfall_baseline_mm",
-            "rainfall_anomaly_pct",
-            "source_dataset",
+    rainfall = (
+        result[
+            [
+                "country_code",
+                "country_name",
+                "year",
+                "rainfall_mm",
+                "rainfall_baseline_mm",
+                "rainfall_anomaly_pct",
+                "source_dataset",
+            ]
         ]
-    ].sort_values(["country_code", "year"]).reset_index(drop=True)
+        .sort_values(["country_code", "year"])
+        .reset_index(drop=True)
+    )
     return cast(pd.DataFrame, rainfall)
 
 

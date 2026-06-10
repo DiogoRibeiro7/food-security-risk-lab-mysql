@@ -119,9 +119,7 @@ def test_annual_indicators_forward_filled_when_configured() -> None:
     annual = pd.DataFrame(
         {"country_code": ["KEN"], "year": [2020], "affordability_anomaly_pct": [12.0]}
     )
-    mart = build_country_month_mart(
-        frame, annual_indicators=annual, forward_fill_annual=True
-    )
+    mart = build_country_month_mart(frame, annual_indicators=annual, forward_fill_annual=True)
     assert (mart["affordability_anomaly_pct"] == 12.0).all()
     # The filled-forward flag marks the synthesized 2021 months.
     assert (mart[mart["year"] == 2021]["annual_indicator_filled"] == 1).all()
@@ -135,9 +133,7 @@ def test_sample_monthly_data_builds_a_valid_mart_with_drought_signal() -> None:
 
     # The injected 2022 drought (KEN/SOM/ETH) should trigger rolling deficits.
     drought_window = mart[
-        (mart["country_code"] == "KEN")
-        & (mart["year"] == 2022)
-        & (mart["month"].between(6, 8))
+        (mart["country_code"] == "KEN") & (mart["year"] == 2022) & (mart["month"].between(6, 8))
     ]
     assert drought_window["severe_3m_deficit_flag"].sum() >= 1
     assert mart["rainfall_anomaly_pct"].notna().any()

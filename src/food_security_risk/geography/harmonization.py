@@ -70,9 +70,7 @@ class Resolution:
         """True when the name maps to a single canonical-reference country."""
 
         return (
-            self.quality in _CONFIDENT
-            and self.iso3 is not None
-            and self.country_name is not None
+            self.quality in _CONFIDENT and self.iso3 is not None and self.country_name is not None
         )
 
 

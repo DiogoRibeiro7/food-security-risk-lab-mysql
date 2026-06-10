@@ -122,9 +122,11 @@ def normalize_fewsnet_context(
 
     validate_fewsnet_context(result)
 
-    ordered = result[list(CONTEXT_COLUMNS)].sort_values(
-        ["country_code", "year", "month", "classification_type"]
-    ).reset_index(drop=True)
+    ordered = (
+        result[list(CONTEXT_COLUMNS)]
+        .sort_values(["country_code", "year", "month", "classification_type"])
+        .reset_index(drop=True)
+    )
     return cast(pd.DataFrame, ordered)
 
 

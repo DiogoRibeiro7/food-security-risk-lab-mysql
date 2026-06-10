@@ -190,9 +190,7 @@ def build_country_month_mart(
 
     ordered_columns = _ordered_columns(mart)
     result = (
-        mart[ordered_columns]
-        .sort_values(["country_code", "year", "month"])
-        .reset_index(drop=True)
+        mart[ordered_columns].sort_values(["country_code", "year", "month"]).reset_index(drop=True)
     )
     return cast(pd.DataFrame, result)
 

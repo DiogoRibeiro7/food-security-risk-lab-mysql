@@ -41,9 +41,7 @@ def test_compute_baseline_anomaly_uses_reference_window() -> None:
 
 
 def test_compute_baseline_anomaly_zero_baseline_is_missing() -> None:
-    frame = pd.DataFrame(
-        {"country_code": ["X", "X"], "year": [2000, 2001], "v": [0.0, 5.0]}
-    )
+    frame = pd.DataFrame({"country_code": ["X", "X"], "year": [2000, 2001], "v": [0.0, 5.0]})
     result = compute_baseline_anomaly(
         frame,
         value_col="v",
@@ -108,9 +106,7 @@ def test_parse_world_bank_response_accepts_bytes_and_str() -> None:
 
 
 def test_normalize_world_bank_affordability_matches_schema() -> None:
-    frame = normalize_world_bank_affordability(
-        _world_bank_payload(), baseline_years=(2019, 2019)
-    )
+    frame = normalize_world_bank_affordability(_world_bank_payload(), baseline_years=(2019, 2019))
     validate_affordability_country_year(frame)
     # Baseline year ratio is 1.0 by construction; 2020 cost is 20% above baseline.
     row_2019 = frame.loc[frame["year"] == 2019].iloc[0]

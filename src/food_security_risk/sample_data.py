@@ -187,7 +187,18 @@ def write_sample_tables(
 # It is a generic bimodal-ish profile, not a specific climate; it just gives the
 # monthly mart a realistic seasonal signal to compute anomalies against.
 _MONTHLY_SEASONAL_SHAPE: tuple[float, ...] = (
-    0.02, 0.03, 0.06, 0.12, 0.16, 0.13, 0.08, 0.06, 0.07, 0.11, 0.10, 0.06,
+    0.02,
+    0.03,
+    0.06,
+    0.12,
+    0.16,
+    0.13,
+    0.08,
+    0.06,
+    0.07,
+    0.11,
+    0.10,
+    0.06,
 )
 
 

@@ -32,7 +32,9 @@ def download_world_bank_indicator(indicator: str, output_path: Path, timeout: in
 
     if not indicator.strip():
         raise ValueError("indicator must not be empty.")
-    url = f"https://api.worldbank.org/v2/country/all/indicator/{indicator}?format=json&per_page=20000"
+    url = (
+        f"https://api.worldbank.org/v2/country/all/indicator/{indicator}?format=json&per_page=20000"
+    )
     response = requests.get(url, timeout=timeout)
     response.raise_for_status()
     output_path.parent.mkdir(parents=True, exist_ok=True)
