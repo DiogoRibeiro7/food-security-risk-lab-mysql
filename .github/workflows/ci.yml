@@ -16,10 +16,12 @@ jobs:
           python-version: "3.11"
       - uses: abatilo/actions-poetry@v3
         with:
-          poetry-version: "1.8.3"
+          poetry-version: "2.2.1"
       - name: Install dependencies
         run: poetry install --with dev
       - name: Lint
         run: poetry run ruff check .
+      - name: Type check
+        run: poetry run mypy src
       - name: Test
         run: poetry run pytest -q
