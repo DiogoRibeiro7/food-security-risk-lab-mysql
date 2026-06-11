@@ -55,3 +55,17 @@ When `--write-back` is used, the score table rows are replaced with the current
 scores. Loads never drop tables: the schema defined in `sql/` (primary keys,
 types, defaults, indexes) stays authoritative, and a replace load deletes rows
 and re-appends instead.
+
+## Integration test
+
+The whole sequence above is covered by an end-to-end test
+(`tests/test_mysql_integration.py`) that runs the CLI against a real MySQL
+server and asserts the tables are populated and keep their declared schema. It
+is opt-in so the default unit suite needs no database. With the Compose database
+running:
+
+```bash
+RUN_MYSQL_INTEGRATION=1 poetry run pytest -m integration   # or: make test-integration
+```
+
+CI runs the same test against a MySQL 8.4 service container.

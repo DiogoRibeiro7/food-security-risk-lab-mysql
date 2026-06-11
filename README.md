@@ -249,13 +249,23 @@ See `docs/data_model.md` for column-level documentation.
 ## Development
 
 ```bash
-make test        # pytest
+make test        # pytest (unit tests; no database needed)
 make lint        # ruff check
 make typecheck   # mypy (strict)
 make format      # ruff format
 ```
 
-CI runs lint, type check, and tests on every push and pull request.
+The unit suite runs entirely against SQLite, so `make test` needs no MySQL
+server. A separate end-to-end test drives the full CLI workflow against real
+MySQL; it is skipped unless you opt in. With the Compose database up:
+
+```bash
+RUN_MYSQL_INTEGRATION=1 poetry run pytest -m integration
+```
+
+CI runs lint, format check, type check, and the unit suite on Python 3.10 and
+3.13, plus the MySQL integration test against a MySQL 8.4 service container, on
+every push and pull request.
 
 ## Responsible use
 

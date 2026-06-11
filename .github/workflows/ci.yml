@@ -30,4 +30,57 @@ jobs:
       - name: Type check
         run: poetry run mypy src
       - name: Test
-        run: poetry run pytest -q --cov=food_security_risk --cov-report=term-missing
+        run: poetry run pytest -q -m "not integration" --cov=food_security_risk --cov-report=term-missing
+
+  mysql-integration:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: food_security_risk
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_password --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: food_security_risk
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root_password
+      RUN_MYSQL_INTEGRATION: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: "2.2.1"
+      - name: Install dependencies
+        run: poetry install --with dev
+      - name: Wait for MySQL to accept connections
+        run: |
+          poetry run python - <<'PY'
+          import sys, time
+          import pymysql
+          for attempt in range(1, 31):
+              try:
+                  pymysql.connect(
+                      host="127.0.0.1", port=3306, user="root",
+                      password="root_password", database="food_security_risk",
+                  ).close()
+                  print("MySQL is ready")
+                  sys.exit(0)
+              except Exception as exc:  # noqa: BLE001 - report and retry
+                  print(f"waiting for MySQL ({attempt}/30): {exc}")
+                  time.sleep(2)
+          sys.exit("MySQL did not become ready in time")
+          PY
+      - name: MySQL integration tests
+        run: poetry run pytest -q -m integration

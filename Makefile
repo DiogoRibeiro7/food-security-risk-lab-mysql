@@ -1,10 +1,15 @@
-.PHONY: install test lint format typecheck sample mysql-up mysql-down init-mysql load-mysql build-analytics score report
+.PHONY: install test test-integration lint format typecheck sample mysql-up mysql-down init-mysql load-mysql build-analytics score report
 
 install:
 	poetry install --with dev
 
 test:
 	poetry run pytest -q
+
+# End-to-end test against a real MySQL server. Requires the Compose database
+# (make mysql-up) and the MYSQL_* environment from .env.
+test-integration:
+	RUN_MYSQL_INTEGRATION=1 poetry run pytest -q -m integration
 
 lint:
 	poetry run ruff check .
