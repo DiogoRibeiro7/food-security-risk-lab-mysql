@@ -7,11 +7,11 @@ readme = "README.md"
 packages = [{ include = "food_security_risk", from = "src" }]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
-pandas = "^2.2.0"
-numpy = "^1.26.0"
+python = ">=3.10,<3.14"
+pandas = "^2.2.2"
+numpy = ">=1.26,<3"
 requests = "^2.32.0"
-typer = {extras = ["all"], version = "^0.12.0"}
+typer = "^0.26.7"
 rich = "^13.7.0"
 pydantic = "^2.7.0"
 python-dotenv = "^1.0.0"

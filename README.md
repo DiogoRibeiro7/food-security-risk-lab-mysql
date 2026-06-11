@@ -98,7 +98,7 @@ food-security-risk-lab-mysql/
 
 ## Requirements
 
-- Python 3.10–3.12
+- Python 3.10–3.13
 - Poetry
 - Docker and Docker Compose
 - MySQL 8.4, provided by `docker-compose.yml`
